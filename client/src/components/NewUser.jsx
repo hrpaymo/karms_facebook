@@ -2,6 +2,8 @@ import React from 'react';
 import $ from 'jquery';
 import {Input, Button, Card, Image, Form, Field, Icon} from 'semantic-ui-react';
 import { Link, Redirect } from 'react-router-dom';
+import Dropzone from 'react-dropzone';
+
 
 class NewUser extends React.Component {
   constructor(props) {
@@ -17,6 +19,12 @@ class NewUser extends React.Component {
       invalidInput: false,
       duplicateUsername: false
     }
+  }
+
+  onDrop(accepted, rejected) {
+    this.setState({
+      accepted, rejected
+    })
   }
 
   handleInputChange(event) {

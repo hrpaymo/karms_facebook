@@ -15,8 +15,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //////////////////////////////////////
 const passport = require('passport') 
 const LocalStrategy = require('passport-local').Strategy;
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+
 app.use(passport.initialize());
 app.use(passport.session());
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
@@ -32,18 +41,37 @@ passport.use(new LocalStrategy(
     });
   }
 ));
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
+// passport.use(new GoogleStrategy({
+//     clientID: GOOGLE_CLIENT_ID,
+//     clientSecret: GOOGLE_CLIENT_SECRET,
+//     callbackURL: "http://www.example.com/auth/google/callback"
+//   },
+//   function(accessToken, refreshToken, profile, done) {
+//        User.findOrCreate({ googleId: profile.id }, function (err, user) {
+//          return done(err, user);
+//        });
+//   }
+// ));
+
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['https://www.googleapis.com/auth/plus.login'] }));
+
+// GET /auth/google/callback
+//   Use passport.authenticate() as route middleware to authenticate the
+//   request.  If authentication fails, the user will be redirected back to the
+//   login page.  Otherwise, the primary route function function will be called,
+//   which, in this example, will redirect the user to the home page.
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/' }),
+  function(req, res) {
+    res.redirect('/login');
+  });
+
 
 app.post('/login',
   passport.authenticate('local'), 
   function(req, res) {
-    // If this function gets called, authentication was successful.
     res.json(req.user)
 });
 /////////////////////////////////////
