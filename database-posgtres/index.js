@@ -441,7 +441,8 @@ module.exports = {
               .then(notificationsId => {
                 return pg.insert({
                   'notifications_id': notificationsId[0],
-                  'friendships_id': insertQueryInfo.usersFriendshipsId
+                  'friendships_id': insertQueryInfo.usersFriendshipsId,
+                  'type': 'approved'
                 })
                 .into('notifications_friendships')
               })
@@ -463,9 +464,6 @@ module.exports = {
                 .update('seen', 'true')
                 .where('id', rows[0].notificationsId)
               })
-
-              // TODO: Implement socket.io sending to requestor (userId) updating notificaitons
-              // TODO: Implement socket.io sending to requestee (friendId) decrementing badge counter
               .catch(trx.rollback);
           })
         } else if (results === null) {
@@ -487,14 +485,12 @@ module.exports = {
             .then(notificationsId => {
               return pg.insert({
                 'notifications_id': notificationsId[0],
-                'friendships_id': userFriendshipsId
+                'friendships_id': userFriendshipsId,
+                'type': 'requested'
               })
               .into('notifications_friendships');
             })
-          
-
-            // TODO: Implement socket.io sending to friend requested (friendId) updating notificaitons
-
+            .then(() => 'some string')
         }
       });
   },
@@ -541,7 +537,10 @@ module.exports = {
                 .del()
             }
           })
+
           // TODO: Implement socket.io updating requestee's notifications so that their counter will drop.
+          
+          
           .then(() => {
           // If userId is undoing their friend request
           // delete that friend request
@@ -749,6 +748,43 @@ module.exports = {
       })
       .innerJoin('users', 'posts.user_id', 'users.id')
       .orderBy('post_id', 'desc');
+  },
+  
+  getChatMessages: (chatId) => {
+    return pg('messages')
+      .where({'chatId': chatId})
+      .limit(50);
+  },
+  getUnseenNotifications: (userId) => {
+    return pg.column(
+      {id: 'notifications.id'},
+      {notificationUserId: 'notifications.user_id'},
+
+      {fromUserId: 'users_friendships.user_id_from'},
+      {fromUserUsername: 'from_users.username'},
+      {fromUserFirstName: 'from_users.first_name'},
+      {fromUserLastName: 'from_users.last_name'},
+      {fromUserPictureUrl: 'from_users.picture_url'},
+
+      // {toUserId: 'users_friendships.user_id_to'},
+      // {toUserUsername: 'to_users.username'},
+      // {toUserFirstName: 'to_users.first_name'},
+      // {toUserLastName: 'to_users.last_name'},
+      // {toUserPictureUrl: 'to_users.picture_url'},
+
+      {friendshipState: 'users_friendships.state'},
+      {notificationTS: 'notifications.created_at'},
+      {notificationSeen:' notifications.seen'}
+    )
+      .select()
+      .from('notifications')
+      .innerJoin('notifications_friendships', 'notifications.id', 'notifications_friendships.notifications_id')
+      .innerJoin('users_friendships', 'notifications_friendships.friendships_id', 'users_friendships.id')
+      .innerJoin('users as from_users', 'from_users.id', 'users_friendships.user_id_from')
+      .innerJoin('users as to_users', 'to_users.id', 'users_friendships.user_id_to')
+      .where('notifications.user_id', userId)
+      .andWhere('notifications.seen', 'false')
+      .orderByRaw('notifications.seen asc, notifications.created_at desc')
   }
 };
 

@@ -1,5 +1,6 @@
 const route = require('express').Router();
 const db = require('../database-posgtres/index.js');
+const notifications = require('./notifications.js');
 const passport = require ('passport');
 const multer  = require('multer');
 const aws = require('aws-sdk');
@@ -211,7 +212,23 @@ const api = {
 
       db.addFriendship(userId, friendId)
         .then((results) => {
+          console.log('added friendship. got results:', results);
           res.sendStatus(200);
+          // TODO: streamline to do getUnseenNotifications in parallel w/ Promise.all
+          return db.getUnseenNotifications(userId);
+        })
+        .then(userNotifications => {
+          if(userNotifications.length) {
+            console.log('sending user notifications:', userNotifications);
+            notifications.sendNotifications(userId, userNotifications);
+          }
+          return db.getUnseenNotifications(friendId);
+        })
+        .then(friendNotifications => {
+          if(friendNotifications.length) {
+            console.log('sending friend notifications:', friendNotifications);
+            notifications.sendNotifications(friendId, friendNotifications);
+          }
         })
         .catch((err) => {
           console.error('addfriendship err:', err);
@@ -233,12 +250,26 @@ const api = {
       db.removeFriendship(userId, friendId)
         .then((results) => {
           res.sendStatus(200);
+          // TODO: streamline to do getUnseenNotifications in parallel w/ Promise.all
+          return db.getUnseenNotifications(userId);
+        })
+        .then(userNotifications => {
+          console.log('user notifications:', userNotifications);
+          if(userNotifications.length) {
+            notifications.sendNotifications(userId, userNotifications);
+          }
+          return db.getUnseenNotifications(friendId);
+        })
+        .then(friendNotifications => {
+          console.log('friend notifications:', friendNotifications);
+          if(friendNotifications.length) {
+            notifications.sendNotifications(friendId, friendNotifications);
+          }
         })
         .catch((err) => {
           console.error(err);
           res.status(500).json('unexpected server error');
         });
-
     },
 
     getFriendship: function(req, res) {
@@ -413,6 +444,21 @@ const api = {
     },
   },
 
+  notifications: {
+    // called when page refreshes
+    getUnseenNotifications: (req, res) => {
+      db.getUnseenNotifications(req.params.userId)
+        .then(data => {
+          console.log('got notifications:', data);
+          res.status(200).send(data);
+        })
+        .catch(err => {
+          console.error('Cannot send notifications:', err);
+          res.status(400).send('Unable to send notifications');
+        });
+    }
+  },
+
   chats: {
 
     getChatSessions: function (req, res) {
@@ -568,6 +614,8 @@ route.post('/friendship', api.user.addFriendship); // CG: ginger's new friendshi
 route.get('/friendship', api.user.getFriendship); // CG: This endpoint returns the status of an existing friendship request between two users.
 route.get('/friend_list', api.user.getAllFriends);
 
+// Notifications
+route.get('/notifications/unseen/:userId', api.notifications.getUnseenNotifications); 
 
 //CHATS
 route.get('/chats/:userId', api.chats.getChatSessions); //retrieve chat history of user
@@ -602,4 +650,7 @@ route.get('/:username/posts/:certainUser', api.posts.getUserPosts); // get posts
 
 route.get('/:firstname/:lastname', api.user.getUsername); //gets the username of a user by first name, last name
 
-module.exports = route;
+module.exports = {
+  route: route,
+  api: api
+};

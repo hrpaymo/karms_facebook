@@ -4,7 +4,7 @@ const _ = require('underscore');
 
 const connections = {};
 const users = {};
-
+  
 let init = function(io) {
 
   let chat = io.of('/chat');
@@ -46,7 +46,9 @@ const getOnlineUsers = function() {
   return Object.keys(connections);
 };
 
-module.exports = init;
-
+module.exports = {
+  init: init
+  // getOnlineUsers: getOnlineUsers
+};
 
 

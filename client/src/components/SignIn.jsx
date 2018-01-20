@@ -65,7 +65,7 @@ class SignIn extends React.Component {
       // If user successfully logs in
       if (data.length) {
         let basicUserData = data[0];
-
+        // console.log('logged in. basic user data[0]:', data[0]);
 
         // callback functions that populate user data in Main
 
