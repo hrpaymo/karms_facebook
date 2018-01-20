@@ -100,6 +100,7 @@ class Main extends React.Component {
         <div>
           <Header 
             userId={this.state.userId}
+            userPicture={this.state.picture_url}
             name={this.state.username} 
             signedIn={this.state.signedIn} 
             updateLoginState={this.updateLoginState.bind(this)}

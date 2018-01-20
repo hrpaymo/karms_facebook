@@ -68,6 +68,17 @@ const api = {
       }
     },
 
+    getUserById: function(req, res) {
+      db.getUserById(req.params.userId, (err, data) => {
+        if (err) {
+          res.status(500).send(err.message);
+          console.log(err.message);
+        } else {
+          res.status(200).send(data);
+        }
+      })
+    },
+
     getUsername: function(req, res) {
       db.getUsername(req.params.firstname, req.params.lastname, (err, data) => {
         if (err) {
@@ -323,12 +334,18 @@ const api = {
   chats: {
 
     getChatSessions: function (req, res) {
-      db.getUserChatSessions(req.params.userId, (err, data) => {
+
+      let filter = {};
+      if (req.query) {
+        filter = req.query;
+      }
+
+      db.getUserChatSessions(req.params.userId, filter, (err, data) => {
         if (err) {
           console.log(err.message);
           res.status(400).send('Unable to retrieve users chat sessions');
         } else {
-           res.status(200).send(data);
+          res.status(200).send(data);
         }
       });
     }
@@ -337,7 +354,13 @@ const api = {
   chat: {
 
     getChatMessages: function(req, res) {
-      db.getChatMessages(req.params.chatId, (err, data) => {
+
+      if (!req.params.userId || !req.query.friendId) {
+        res.status(400).send('Please send as GET /api/chat/<userId>?friendId=<friendId>');
+        return;
+      }
+
+      db.getChatMessages(req.params.userId, req.query.friendId, (err, data) => {
         if (err) {
           console.log(err.message);
           res.status(400).send('Unable to retrieve users chat sessions');
@@ -409,9 +432,10 @@ route.get('/friend_list', api.user.getAllFriends);
 
 //CHATS
 route.get('/chats/:userId', api.chats.getChatSessions); //retrieve chat history of user
-route.get('/chat/:chatId', api.chat.getChatMessages); //retrieve messages from a chat session
+route.get('/chat/:userId', api.chat.getChatMessages); //retrieve messages from a chat session
 //USER
 // route.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }),api.user.login); // varifies identity on login
+route.get('/user/:userId', api.user.getUserById); // gets user by user Id
 route.post('/friendship', api.user.addFriendship); // add a friendship between 2 users
 route.patch('/friendship', api.user.destroyFriendship); // destroy a friendship or a friendship request
 route.get('/friendship', api.user.getFriendship); // returns the status of an existing friendship between two users.

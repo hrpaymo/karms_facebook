@@ -182,6 +182,19 @@ module.exports = {
       }  
     });
   },
+
+  getUserById: (userId, callback) => {
+    return pg('users')
+      .select('users.id', 'users.username', 'users.picture_url as pictureUrl', 'users.first_name as firstName', 'users.last_name as lastName')
+      .where('users.id', userId)
+      .then((results) => {
+        callback(null, results);
+      })
+      .catch((err) => {
+        callback(err, null);
+      })
+  },
+
   //retrieves all users
   getAllUsers: (callback) => {
     client.query(`SELECT * FROM users;`, (err, res) => {
@@ -577,53 +590,118 @@ module.exports = {
         .where({'state': 'friend'});
     }
   }, 
-
-  addUserChatSession: (user1, user2) => {
-    var newChat = {
-      user_1: user1,
-      user_2: user2
-    };
-
-    return pg('chats')
-      .modify(includesUserInChat, user1)
-      .modify(includesUserInChat, user2)
-      .then((results) => {
-        
-        //check for existing user chat session
-        if (results.length) {
-          return results[0].id
-        }
-
-        return pg('chats')
-          .insert(newChat)
-          .returning('id')   
-      });
-  },
-
   
-  addChatMessage: (chatId, message) => {
+  addChatMessage: (fromId, toId, text) => {
     let newMessage = {
-      chat_id: chatId,
-      text: message.text,
-      authord_id: message.from
+      chat_id: undefined,
+      text: text,
+      author_id: fromId
     }
 
-    return pg('messages')
-      .insert(message)
-      .returning('id')
-      .catch(err => console.log(err.message));
-  },
-
-  getUserChatSessions: (userId) => {
     return pg('chats')
-      .select('*')  
-      .where({'user_1': userId})
-      .orWhere({'user_2': userId})
+      .where(function() {
+        this.where('user_1', fromId).orWhere('user_2', fromId)
+      })
+      .andWhere(function() {
+        this.where('user_1', toId).orWhere('user_2', toId)
+      })
+      .then((results) => {
+
+        //check for existing user chat session
+        if (results.length) {
+          return [results[0].id]
+        } else {
+          //insert new chat session in chats   
+          let newChat = {
+            user_1: fromId,
+            user_2: toId
+          };
+
+          return pg('chats')
+            .insert(newChat)
+            .returning('id')
+        }
+      })
+      .then((id) => {
+
+        newMessage.chat_id = id[0];
+        return newMessage.chat_id;
+      })
+      .then(() => {
+        return pg('messages')
+          .insert(newMessage)
+          .returning('id')
+      })
+      .catch(err => console.log(err.message));
+
   },
 
-  getChatMessages: (chatId) => {
-    return pg('messages')
-      .where({'chatId': chatId})
-      .limit(50);
+  getUserId: (username) => {
+    return pg('users')
+      .select('id')
+      .where({ 'username': username })
+      .then((id) => (
+        id[0].id
+      ))
+  },
+
+  getUserChatSessions: (userId, filter, callback) => {
+    var query = `select users.id as "friendId", users.first_name as "firstName", users.last_name as "lastName", users.username, users.picture_url as "pictureUrl", chats.id from chats inner join users on (user_1 = ${userId} and user_2 = users.id) or (user_2 = ${userId} and user_1 = users.id)`;
+
+    if (Object.keys(filter).length) {
+      query += ` where users.username = ${filter.username}`
+    }
+
+
+    client.query(query, (err, res) => {
+      if (err) {
+        callback(err, null);
+      } else {
+        console.log('res', res);
+        callback(null, res.rows);
+      }
+    });
+  },
+
+  getChatMessages: (userId, friendId, callback) => {
+    
+    return pg('chats')
+      .where(function () {
+        this.where('user_1', userId).orWhere('user_2', userId)
+      })
+      .andWhere(function () {
+        this.where('user_1', friendId).orWhere('user_2', friendId)
+      })
+      .then((results) => {
+
+        //check for existing user chat session
+        if (results.length) {
+          return [results[0].id];
+        } else {
+
+          let newChat = {
+            user_1: userId,
+            user_2: friendId
+          };
+
+          return pg('chats')
+            .insert(newChat)
+            .returning('id')
+        }
+      })
+      .then(([chatId]) => {
+
+        return pg('messages')
+          .select('messages.id', 'messages.author_id as authorId', 'users.first_name as firstName', 'users.last_name as lastName', 'users.picture_url as pictureUrl', 'messages.created_at as createdAt', 'messages.text')
+          .innerJoin('users', 'messages.author_id', 'users.id')
+          .where({ 'messages.chat_id': chatId })
+          .then((result) => {
+            callback(null, result);
+          })
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
   }
-}
+};
+

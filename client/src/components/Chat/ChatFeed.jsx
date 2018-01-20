@@ -3,12 +3,12 @@ import { Feed } from 'semantic-ui-react'
 import ChatMessage from './ChatMessage.jsx';
 
 const ChatFeed  = (props) => {
-  
+  console.log('Messages ', props.messages);
   return (
     <div className='chatFeed'>
       <Feed>
         {props.messages.map((message, index) => (
-          <ChatMessage key={index} message={message} />
+          <ChatMessage key={index} currentUserId={props.userId} message={message} />
         ))}
       </Feed> 
     </div>
