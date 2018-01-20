@@ -3,7 +3,6 @@ import { Feed } from 'semantic-ui-react'
 import ChatMessage from './ChatMessage.jsx';
 
 const ChatFeed  = (props) => {
-  console.log('Messages ', props.messages);
   return (
     <div className='chatFeed'>
       <Feed>
