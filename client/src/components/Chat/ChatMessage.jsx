@@ -5,12 +5,20 @@ import moment from 'moment';
 
 const ChatMessage = (props) => {
 
-  return (
-    <Feed.Event>
-      <Feed.Label image='https://semantic-ui.com/images/avatar/large/elliot.jpg' />
-      <Feed.Content content={props.message} />
-    </Feed.Event>
-  );
+  if (props.message.authorId === props.currentUserId) {
+    return (
+        <Feed.Event>
+          <Feed.Content content={<div className='chatmessageuser'>{props.message.text}</div>}/>
+        </Feed.Event>
+    );
+  } else {
+    return (
+      <Feed.Event>
+        <Feed.Label image={props.message.pictureUrl} />
+        <Feed.Content content={<div className='chatmessagefriend'>{props.message.text}</div>} />
+      </Feed.Event>
+    );
+  }
 }
 
 export default ChatMessage;

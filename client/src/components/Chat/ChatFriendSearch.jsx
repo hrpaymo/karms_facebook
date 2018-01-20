@@ -23,17 +23,18 @@ class ChatFriendSearch extends React.Component {
   }
 
   componentDidMount() {
-    this.getAllUsers();
+    this.getFriends();
   }
 
-  getAllUsers() {
+  getFriends() {
     //var user = this.state.username;
     http.get(`/api/search/users`)
       .then((response) => {
         let searchNames = response.data.map(function (user) {
           return {
             "title": user.first_name + ' ' + user.last_name,
-            "description": user.username
+            "description": user.username,
+            "value": user.id
           }
         });
 
@@ -59,9 +60,14 @@ class ChatFriendSearch extends React.Component {
       value: result.description 
     });
 
+    let firstName = result.title.split(' ')[0];
+    let lastName = result.title.split(' ')[1];
+
     this.props.onSelect({
-      name: result.title,
-      username: result.description
+      firstName: firstName,
+      lastName: lastName,
+      username: result.description,
+      id: result.value
     });
   };
 

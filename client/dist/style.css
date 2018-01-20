@@ -616,29 +616,50 @@ textarea {
   vertical-align: 'middle'
 }
 
+.chatinput {
+
+  border-top: 1px;
+  border-color: #e5e5e5
+}
+.chathistoryname {
+  
+}
+
 .chatHeader {
   background-color: #3F5FA4;
   color: rgb(255, 255, 255);
   height: 3rem;
   vertical-align: 'middle';
+  margin-top: -14px;
+  margin-left: -14px;
+  margin-right: -14px;
+  font-size: larger;
+  padding-left: 14px;
+  padding-top: 14px
 }
 
 .ui.icon.right.floated.button.chatCloseButton {
   background-color: rgba(0, 0, 0, 0.0);
   vertical-align: 'middle';
   color: rgb(255, 255, 255);
+  margin-top: -14px;
 }
 
 .chatFeed {
   min-height: 20rem;
+  max-height: 30rem;
+  margin-left: -10px;
+  margin-right: -10px;
+  overflow-y: scroll;
 }
 
 .chatcontainer {
   position: fixed;
   bottom: 0px;
   left: 100px;
-  min-width: 30rem;
-  max-width: 50rem;
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 30rem;
   z-index: 10;
 }
 
@@ -660,6 +681,36 @@ textarea {
   background: transparent;
   border-style: none;
   cursor: pointer;
+}
+
+.chatmessagefriend {
+  text-align: left;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 15px;
+  background-color: #f1f0f0;
+  color: #4f5359;
+  float: left;
+}
+
+.chatmessageuser {
+  text-align: right;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 15px;
+  border: solid;
+  border-width: 1px;
+  background-color: #3f80ff;
+  color: rgb(255, 255, 255);
+  float: right;
 }
 
 

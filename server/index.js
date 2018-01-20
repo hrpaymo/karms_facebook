@@ -1,7 +1,8 @@
 const express = require('express');
 let app = express();
 const server = require('http').Server(app);
-const chat = require('./chat').attach(server);
+const io = require('socket.io')(server);
+require('./chat')(io);
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const db = require('../database-posgtres/index.js');
