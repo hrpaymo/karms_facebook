@@ -15,8 +15,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //////////////////////////////////////
 const passport = require('passport') 
 const LocalStrategy = require('passport-local').Strategy;
+
 app.use(passport.initialize());
 app.use(passport.session());
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
@@ -32,18 +40,10 @@ passport.use(new LocalStrategy(
     });
   }
 ));
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
 
 app.post('/login',
   passport.authenticate('local'), 
   function(req, res) {
-    // If this function gets called, authentication was successful.
     res.json(req.user)
 });
 /////////////////////////////////////

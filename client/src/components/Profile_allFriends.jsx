@@ -27,7 +27,7 @@ class Profile_allFriends extends React.Component {
               return (
                 <div key={friend.id} className="friend">
                   <Link to={friendUrl}>
-                    <img src={friend.picture_url} id={friend.username}/>
+                    <img src={friend.picture_url || '/images/profile_default.jpg'} id={friend.username}/>
                   </Link>
                   <Link to={friendUrl}>
                     <span className="friendName" id={friend.username}>

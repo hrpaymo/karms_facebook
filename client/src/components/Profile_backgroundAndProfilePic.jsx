@@ -14,7 +14,7 @@ class Profile_backgroundAndProfilePic extends React.Component {
     return (
       <div className={this.props.profilePageInfo.cover_picture ? "backgroundAndProfilePic" : "backgroundAndProfilePic defaultBackground"}>
         <Image className="backgroundPicture" src={this.props.profilePageInfo.cover_picture}></Image>
-        <Image className="profilePicture" src={this.props.profilePageInfo.profile_picture}></Image>
+        <Image className="profilePicture" src={this.props.profilePageInfo.profile_picture || '/images/profile_default.jpg'}></Image>
         <Header size="large" inverted color="grey" textAlign="center" className="name"> 
           {this.props.userInfo.first_name} {this.props.userInfo.last_name} 
         </Header>

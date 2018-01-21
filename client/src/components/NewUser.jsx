@@ -12,7 +12,7 @@ class NewUser extends React.Component {
       password: '',
       firstName: '',
       lastName: '',
-      pictureUrl: '/images/profile_default.jpg',
+      pictureUrl: null,
       redirect: false,
       invalidInput: false,
       duplicateUsername: false
@@ -24,7 +24,7 @@ class NewUser extends React.Component {
     const name = event.target.name;
     if (name === 'pictureUrl' && value === '') {
       this.setState({
-        pictureUrl: '/images/profile_default.jpg'
+        pictureUrl: null
       })
     } else {
         this.setState({

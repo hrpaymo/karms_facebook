@@ -101,7 +101,7 @@ class Post extends React.Component {
         <Card fluid>
           <div className="postOverall">
             <div className="postHeader">
-              <img className="postPic" src={this.props.post.picture_url}/>
+              <img className="postPic" src={this.props.post.picture_url || '/images/profile_default.jpg'}/>
               <div className="postBody">
                 <p className="postName">
                   <Link to={clickedProfilePath}>
