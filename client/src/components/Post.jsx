@@ -24,10 +24,15 @@ class Post extends React.Component {
   }
 
   getLikeAmount() {
-    axios.get(`/api/likes`, { params: { 'text': this.props.post.post_text }})
+    let params = {
+      'post_id': this.props.post.post_id
+    }
+
+    axios.get(`/api/post/likeCount`, { params: params})
       .then((res) => {
+        let count = res.data[0] && res.data[0].count
         this.setState({
-          likeCount: res.data.length
+          likeCount: count || 0
         })
       })
       .catch((err) => {
@@ -41,45 +46,47 @@ class Post extends React.Component {
 
   executeToggleLike() {
     let username = this.props.name;
-    // Get the author's username
-    axios.get(`/api/${username}/post/author`, { params: { 'text': this.props.post.post_text }})
-      .then((author) => {
-        // Get the number of times you have liked the post
-        axios.get(`/api/${username}/likes`, { params: { 'text': this.props.post.post_text }})
-          .then((count) => {
-            let personalLikeCount = count.data[0].count;
-            // If you haven't liked it yet
-            if (personalLikeCount < 1) {
-              axios.post(`/api/likes/${author.data[0].username}`, { 'text': this.props.post.post_text, 'username': username })
-                .then((res) => {
-                  this.getLikers();
-                  this.getLikeAmount();
-                })
-                .catch((err) => {
-                  console.error('This is the err', err);
-                })
-            } else { // Time to unlike!
-              axios.delete(`/api/likes/${author.data[0].username}`, { params: { 'text': this.props.post.post_text, 'username': username }})
-                .then((res) => {
-                  this.getLikers();
-                  this.getLikeAmount();
-                })
-                .catch((err) => {
-                  console.error('This is the err', err);
-                })
-            }
-          })
-          .catch((err) => {
-            console.error('Error getting personal like count', err);
-          })
+    let authorUsername= this.props.post.username;
+
+    // Get the number of times you have liked the post
+    let params = {
+      'post_id': this.props.post.post_id,
+      'userId': this.props.userId
+    }
+
+    // Have you liked a post?
+    axios.get(`/api/post/like`, { params: params})
+      .then((res) => {
+        let personalLikeCount = res.data[0] && res.data[0].count;
+
+        // If you haven't liked it yet
+        if (personalLikeCount < 1) {
+          axios.post('/api/post/like', params)
+            .then((res) => {
+              this.getLikers();
+              this.getLikeAmount();
+            })
+            .catch((err) => {
+              console.error('This is the err', err);
+            })
+        } else { // Time to unlike!
+          axios.delete('/api/post/unlike', {params: params})
+            .then((res) => {
+              this.getLikers();
+              this.getLikeAmount();
+            })
+            .catch((err) => {
+              console.error('This is the err', err);
+            })
+        }
       })
       .catch((err) => {
-        console.error('Error', err);
+        console.error('Error getting personal like count', err);
       })
   }
 
   getLikers() {
-    axios.get('/api/likers', { params: { 'text': this.props.post.post_text }})
+    axios.get('/api/likers', { params: { 'post_id': this.props.post.post_id }})
       .then((likers) => {
         let likerStr = ''
         likers.data.map((liker) => {

@@ -56,7 +56,7 @@ class FriendUserButton extends React.Component {
         className='addFriend'
         onClick={() => this.props.addFriend(this.props.profileUserId)} >
           <Button.Content visible>
-            <Icon name='check' />
+            <Icon name='add circle'/>
             Add Friend
           </Button.Content> 
         </Button>
