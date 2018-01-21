@@ -1,28 +1,65 @@
 import React from 'react';
 import { List, Image, Divider } from 'semantic-ui-react';
 
-const ChatHistoryMessage = (props) => (
-  <List.Item>
-    <Image avatar src={props.chat.photo} />
-    <List.Content>
-      <List.Header>{props.chat.name}</List.Header>
-      <List.Description>{props.chat.text}</List.Description>
-    </List.Content>
-  </List.Item>
-);
+class ChatHistoryMessage extends React.Component {
+  constructor(props) {
+    super(props);
 
-const ChatHistory = (props) => {
-  return (
-    <div>
-      <List>
-        {props.chats.map((chat) => (
-          <ChatHistoryMessage key={chat.chatId} chat={chat} />
-        ))}
-      </List>
-      <Divider horizontal />
-      <a onClick={props.newMessage}>New Message</a>
-    </div>
-  );
+    this.onSelectChat = this.onSelectChat.bind(this);
+  }
+  
+  onSelectChat() {
+    let friend = {
+      firstName: this.props.chat.firstName,
+      lastName: this.props.chat.lastName,
+      username: this.props.chat.username,
+      id: this.props.chat.friendId
+    };
+    this.props.onSelectChat(friend);
+  }
+  
+  
+  render() {
+    
+    return (
+      <div className='chathistoryitem' onClick={this.onSelectChat}>
+        <List.Item >
+          <Image avatar src={this.props.chat.pictureUrl} />
+          <List.Content>
+            <List.Description>{this.props.chat.firstName + ' ' + this.props.chat.lastName}</List.Description>
+          </List.Content>
+        </List.Item>
+      </div>
+    );
+  }
+}
+
+class ChatHistory extends React.Component {
+  constructor(props) {
+    super(props);
+    
+    this.onNewMessage = this.onNewMessage.bind(this);
+  };
+  
+  onNewMessage() {
+    this.props.newMessage();
+  }
+
+  render() {
+     
+    return (
+      <div>
+        <List>
+          {this.props.chats.map((chat) => (
+            <ChatHistoryMessage key={chat.id} chat={chat} onSelectChat={this.props.onSelectChat} />
+          ))}
+        </List>
+        <Divider horizontal />
+        <div><a onClick={this.onNewMessage}>New Message</a></div>
+        <div><a onClick={this.props.onOnlineUsers}>Show Online Users</a></div>
+      </div>
+    );
+  }
 }
 
 export default ChatHistory;

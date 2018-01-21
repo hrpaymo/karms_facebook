@@ -14,12 +14,16 @@ class SignIn extends React.Component {
       redirect: false,
       undefinedUsername: false,
       usernameError: false,
+      password: '',
+      undefinedPassword: false,
     };
   }
-
-  handleUsernameInput (e) { 
+  handleFormInput(event) {
+    event.preventDefault();
+    const value = event.target.value;
+    const name = event.target.name;
     this.setState({
-      username: e.target.value,
+      [name]: value,
       usernameError: false
     });
   }
@@ -32,28 +36,35 @@ class SignIn extends React.Component {
   }
 
   handleLogIn(e) {
+    var {username, password} = this.state;
     e.preventDefault();
 
     // If the user has not entered a username, show error
-    if (!this.state.username) {
+    if (!username || !password) {
       this.setState({
-        undefinedUsername: true
+        undefinedUsername: Boolean(!username),
+        undefinedPassword: Boolean(!password)
       });
     } else {
       // otherwise attempt to log user in
-      this.logUserIn(this.state.username);
+      this.logUserIn(username, password);
     }  
   }
 
-  logUserIn(username) {
+  resetErrors() {
+    this.setState({
+      undefinedUsername: false,
+      undefinedPassword: false,
+    })
+  }
 
-    // Call login endpoint
-
-    $.get(`/api/${username}`, (data) => {
+  logUserIn(username, password) {
+    this.resetErrors();
+    this.setState({username: username, password: password})
+    $.post(`/login`, {username: username, password: password}, (data) => {
       // If user successfully logs in
       if (data.length) {
         let basicUserData = data[0];
-
 
         // callback functions that populate user data in Main
 
@@ -67,11 +78,17 @@ class SignIn extends React.Component {
 
       } else {
         // Failed Login 
+        data.type === 'username' 
+        ?
         this.setState({
           showSignupForm: true,
+          usernameError: true,
           redirect: false,
-          usernameError: true
-        });
+        })
+        : 
+        this.setState({
+          undefinedPassword: true,
+        })
       }
     })
   }
@@ -93,8 +110,9 @@ class SignIn extends React.Component {
         </div>
         <div className="right-column">
           <h3 id="sign-in"> Sign In </h3>
-          <form>
+          <form action="/login" method="post">
             <Card className="signIn-card">
+
               <h5 className="signInLabel bottom aligned content">Username</h5>
               {this.state.undefinedUsername && 
                 <h5 className="undefined-user-error">
@@ -103,18 +121,39 @@ class SignIn extends React.Component {
               }
               <Input 
                 className="username-input"
+                name="username"
                 type="text"
-                onChange={this.handleUsernameInput.bind(this)}
+                autoComplete='username'
+                onChange={this.handleFormInput.bind(this)}
               />
-              <Link onClick={this.handleLogIn.bind(this)} to={feedPath}>
-                <Button className="login-button" id="login"> Log In </Button>
+
+              <h5 className="signInLabel bottom aligned content">Password</h5>
+              {this.state.undefinedPassword && 
+                <h5 className="undefined-user-error">
+                  <Icon name="warning circle"/>Invalid password.
+                </h5>
+              }
+              <Input 
+                className="username-input"
+                name="password"
+                type="password"
+                autoComplete='current-password'
+                onChange={this.handleFormInput.bind(this)}
+              />
+
+              <Link 
+                to={feedPath}
+                onClick={this.handleLogIn.bind(this)} 
+              >
+                <Button className="login-button" id="login" type="submit"> Log In </Button>
               </Link>
               <div id="create-account-text">Don't have an account yet?</div>
               <div>
                 <Button 
                   className="login-button"
                   id="create-new-account"
-                  onClick={this.showSignUpForm.bind(this)}>
+                  onClick={this.showSignUpForm.bind(this)}
+                >
                   Sign Up
                 </Button>
               </div>

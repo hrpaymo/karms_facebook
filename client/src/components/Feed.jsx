@@ -41,23 +41,23 @@ class Feed extends React.Component {
   }
 
   getAllPosts() {
-    let username=this.state.username;
-    axios.get(`/api/${username}/posts/friends`)
-      .then((res1) => {
-        axios.get(`/api/${username}/posts/nonFriends`)
-          .then((res2) => {
-            //concats all friends posts, then all non-friends posts
-            this.setState({
-              postList: res1.data.concat(res2.data)
-            })
-          })
-          .catch((err) => {
-            console.error(err);
-          });
+    let userId = this.state.userId;
+
+    // Change Param to 'all' to 'friends' to see the feed with just friend post
+    let params = {
+      userId: this.state.userId,
+      type: 'all'
+    }
+
+    axios.get('/api/myFeed', {params: params})
+      .then((results) => {
+        this.setState({
+          postList: results.data
+        })
       })
       .catch((err) => {
         console.error(err);
-      });
+      })
   }
 
   render() {
@@ -112,6 +112,7 @@ class Feed extends React.Component {
 
         <div className="feedContent">
           <PostList 
+            userId={this.state.userId}
             postList={this.state.postList} 
             getAllPosts={this.getAllPosts.bind(this)} 
             name={this.state.username} />

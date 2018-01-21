@@ -25,7 +25,7 @@ class Profile extends React.Component {
       profileUserId: null,
       isOwner: null,
       friendshipStatus: null,
-      posts: [],
+      authorPosts: [],
       profilePageInfo: '',
       profileInfo: {},
       friendList: []
@@ -35,7 +35,6 @@ class Profile extends React.Component {
   componentDidMount() {
     window.scrollTo(0, 0);
     this.loadProfileInfo(this.state.profilePageUsername);
-    this.getUserPosts(this.state.profilePageUsername);
     this.loadSupplementaryProfileInfo(this.state.profilePageUsername);
   }  
 
@@ -45,7 +44,6 @@ class Profile extends React.Component {
         profilePageUsername: nextProps.match.params.friendname
       });
       this.loadProfileInfo(nextProps.match.params.friendname);
-      this.getUserPosts(nextProps.match.params.friendname);
       this.loadSupplementaryProfileInfo(nextProps.match.params.friendname);
     }
   }
@@ -57,14 +55,19 @@ class Profile extends React.Component {
 
         let profileUserId=responseUserInfo.data[0].id;
 
+        let onOwnPage = this.state.username === profileName;
         this.setState({
           profileInfo: responseUserInfo.data[0],
           profileUserId: profileUserId,
-          isOwner: this.state.username === profileName
+          isOwner: onOwnPage
         });
 
         this.getFriends(profileUserId);
-        this.getFriendshipStatus(profileUserId);
+        this.getUserPosts(profileUserId);
+
+        if (!onOwnPage) {
+          this.getFriendshipStatus(profileUserId);   
+        }
       })
       .catch((error) => {
         console.log(error);
@@ -83,12 +86,13 @@ class Profile extends React.Component {
       }); 
   }
 
-  getUserPosts(user) {
-    var username = this.state.username;
-    axios.get(`/api/${username}/posts/${user}`)
-      .then((response) => {
+  getUserPosts(profileId) {
+    let profileUserId = profileId || this.state.profileUserId;
+
+    axios.get(`/api/posts/${profileUserId}`)
+      .then((results) => {
         this.setState({
-          posts: response.data
+          authorPosts: results.data
         });
       })
       .catch((error) => {
@@ -216,9 +220,10 @@ class Profile extends React.Component {
         <Profile_photos 
           view={this.state.view} />
         <Profile_postSection 
+          loggedInUserId={this.state.loggedInUserId}
           getUserPosts={this.getUserPosts.bind(this)} 
           username={this.state.profilePageUsername} 
-          posts={this.state.posts} 
+          posts={this.state.authorPosts}
           view={this.state.view} 
           isOwner={this.state.isOwner} />
       </div>

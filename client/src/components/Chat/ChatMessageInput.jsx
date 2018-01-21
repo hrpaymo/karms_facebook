@@ -15,6 +15,9 @@ class ChatMessageInput extends React.Component {
   }
 
   onSend(e, {value}) {
+    this.setState({
+      text: ''
+    });
     this.props.onSubmit(this.state.text);
   }
 

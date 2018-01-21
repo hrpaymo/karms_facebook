@@ -7,13 +7,11 @@ class NewUser extends React.Component {
   constructor(props) {
     super(props);
 
-    // Username input field for Sign up is
-    // seeded from login field.
-
     this.state = {
-      username: this.props.username,
-      firstName: undefined,
-      lastName: undefined,
+      username: '',
+      password: '',
+      firstName: '',
+      lastName: '',
       pictureUrl: '/images/profile_default.jpg',
       redirect: false,
       invalidInput: false,
@@ -24,21 +22,23 @@ class NewUser extends React.Component {
   handleInputChange(event) {
     const value = event.target.value;
     const name = event.target.name;
-
-    // When a user types into any field field
-    // update the field and reset all duplicate username
-    // and invalid input errors (probably not best behavior ....)
-
-    this.setState({
-      [name]: value, 
-      duplicateUsername: false,
-      invalidInput: false
-    });
+    if (name === 'pictureUrl' && value === '') {
+      this.setState({
+        pictureUrl: '/images/profile_default.jpg'
+      })
+    } else {
+        this.setState({
+          [name]: value,
+          duplicateUsername: false,
+          invalidInput: false
+        });
+    }
   }
 
   handleSubmit() {
     // If required fields are missing, throw error
-    if (!this.state.username || !this.state.firstName || !this.state.lastName) {
+    var {username, password, firstName, lastName, pictureUrl} = this.state;
+    if (!username || !password || !firstName || !lastName) {
       this.setState({
         invalidInput: true
       });
@@ -46,17 +46,8 @@ class NewUser extends React.Component {
     // Post to the signup endpoint
     } else {
 
-      $.post(`/api/${this.state.username}`, this.state, () => {
-        // After successfull signup log user in
-        // Instead, consider just returning user data at this point
-
-        this.props.logUserIn(this.state.username);
-
-        // On successful account creation, redirect away from signup page
-        this.setState({
-          redirect: true
-        })
-
+      $.post(`/api/${username}`, this.state, () => {
+        this.props.logUserIn(username, password);
       })
       .fail((err) => {
         // on failure, if error was duplicate username, show that error
@@ -95,8 +86,16 @@ class NewUser extends React.Component {
               className="newUserInput" 
               name="username" 
               type="text" 
+              autoComplete='username'
               onChange={this.handleInputChange.bind(this)} 
               placeholder="Username"/>
+            <Input 
+              className="newUserInput" 
+              name="password" 
+              type="password" 
+              autoComplete='new-password'
+              onChange={this.handleInputChange.bind(this)} 
+              placeholder="Password"/>
             <Input 
               className="newUserInput"
               name="firstName"
@@ -109,6 +108,12 @@ class NewUser extends React.Component {
               type="text"
               onChange={this.handleInputChange.bind(this)}
               placeholder="Last name"/>
+            <Input 
+              className="newUserInput"
+              name="pictureUrl"
+              type="text"
+              onChange={this.handleInputChange.bind(this)}
+              placeholder="Profile picture url (optional)"/>
             <div id="terms">By clicking Create Account, you agree to our Terms and that you have read our Data Policy, including our Cookie Use.</div>
             <Input 
               className="login-button"

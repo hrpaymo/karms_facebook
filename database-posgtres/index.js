@@ -62,6 +62,7 @@ module.exports = {
       }  
     });
   },
+
   createPost: (username, text, callback) => {
     let queryStr =
       `INSERT INTO posts (post_text, user_id)
@@ -74,6 +75,7 @@ module.exports = {
       }
     });
   },
+
   likePost: (author, text, username, callback) => {
     let queryStr = 
     `INSERT INTO user_posts_liked (user_id, post_id) 
@@ -112,7 +114,7 @@ module.exports = {
 
     let queryStr =
     `SELECT user_id FROM user_posts_liked WHERE post_id = 
-    (SELECT id FROM posts WHERE post_text = '${text}')`;
+    (SELECT id FROM posts WHERE post_text = '${text}' LIMIT 1)`;
     client.query(queryStr, (err, res) => {
       if (err) {
         callback(err, null);
@@ -182,6 +184,19 @@ module.exports = {
       }  
     });
   },
+
+  getUserById: (userId, callback) => {
+    return pg('users')
+      .select('users.id', 'users.username', 'users.picture_url as pictureUrl', 'users.first_name as firstName', 'users.last_name as lastName')
+      .where('users.id', userId)
+      .then((results) => {
+        callback(null, results);
+      })
+      .catch((err) => {
+        callback(err, null);
+      })
+  },
+
   //retrieves all users
   getAllUsers: (callback) => {
     client.query(`SELECT * FROM users;`, (err, res) => {
@@ -219,21 +234,22 @@ module.exports = {
   },
   //add user to db
   addUser: (userData, callback) => {
-    client.query(`INSERT INTO users (username, first_name, last_name, picture_url) VALUES ('${userData.username}', '${userData.firstName}', '${userData.lastName}', '${userData.pictureUrl}');`, (err, res) => {
+    client.query(`INSERT INTO users (username, password, first_name, last_name, picture_url) VALUES ('${userData.username}', '${userData.password}', '${userData.firstName}', '${userData.lastName}', '${userData.pictureUrl}');`, (err, res) => {
       if (err) {
+        console.error(err.error);
         callback(err.detail, null);
       } else {  
         callback(null, res.rows);
       }
     });
   },   
-  addNewUserProfileInfo: (username, callback) => {
+  addNewUserProfileInfo: (user, callback) => {
     var defaultProfile = {};
-    defaultProfile.profile_picture = '/images/profile_default.jpg'
+    defaultProfile.profile_picture = user.pictureUrl;
     defaultProfile = JSON.stringify(defaultProfile);
-    client.query(`INSERT INTO user_profiles (user_id, user_data) VALUES ((SELECT id FROM users WHERE username='${username}'), '${defaultProfile}')`, (err, res) => {
+    client.query(`INSERT INTO user_profiles (user_id, user_data) VALUES ((SELECT id FROM users WHERE username='${user.username}'), '${defaultProfile}')`, (err, res) => {
       if (err) {
-        console.log(err.message);
+        console.error(err.message);
         callback(err, null);
       } else {  
         callback(null, res.rows);
@@ -256,6 +272,7 @@ module.exports = {
       }
     });
   },
+
   //add 2 rows to user_friends table
   addFriend: (username1, username2, callback) => {
     let queryStr = `INSERT INTO user_friends (username, friend_id)
@@ -330,6 +347,7 @@ module.exports = {
       }  
     });
   },
+
   getProfilePageInfo: (username, callback) => {
     var query = `SELECT * from user_profiles WHERE user_id = (SELECT id FROM users WHERE username = '${username}')`;
     client.query(query, (err, res) => {
@@ -406,7 +424,7 @@ module.exports = {
                   .update({'state': 'friend'})
                   .into('users_friendships')
               })
-              .then(trx.commit)
+              // .then(trx.commit)
               // add notification to requestor
               .then(() => {
                 return pg.select('id')
@@ -423,7 +441,8 @@ module.exports = {
               .then(notificationsId => {
                 return pg.insert({
                   'notifications_id': notificationsId[0],
-                  'friendships_id': insertQueryInfo.usersFriendshipsId
+                  'friendships_id': insertQueryInfo.usersFriendshipsId,
+                  'type': 'approval'
                 })
                 .into('notifications_friendships')
               })
@@ -442,12 +461,12 @@ module.exports = {
               })
               .then(rows => {
                 return pg('notifications')
-                .update('seen', 'true')
+                .update({
+                  'seen': 'true'
+                })
                 .where('id', rows[0].notificationsId)
               })
-
-              // TODO: Implement socket.io sending to requestor (userId) updating notificaitons
-              // TODO: Implement socket.io sending to requestee (friendId) decrementing badge counter
+              .then(trx.commit)
               .catch(trx.rollback);
           })
         } else if (results === null) {
@@ -469,14 +488,11 @@ module.exports = {
             .then(notificationsId => {
               return pg.insert({
                 'notifications_id': notificationsId[0],
-                'friendships_id': userFriendshipsId
+                'friendships_id': userFriendshipsId,
+                'type': 'request'
               })
               .into('notifications_friendships');
             })
-          
-
-            // TODO: Implement socket.io sending to friend requested (friendId) updating notificaitons
-
         }
       });
   },
@@ -523,7 +539,10 @@ module.exports = {
                 .del()
             }
           })
+
           // TODO: Implement socket.io updating requestee's notifications so that their counter will drop.
+          
+          
           .then(() => {
           // If userId is undoing their friend request
           // delete that friend request
@@ -576,53 +595,199 @@ module.exports = {
         .where({'state': 'friend'});
     }
   }, 
-
-  addUserChatSession: (user1, user2) => {
-    var newChat = {
-      user_1: user1,
-      user_2: user2
-    };
+  
+  addChatMessage: (fromId, toId, text) => {
+    let newMessage = {
+      chat_id: undefined,
+      text: text,
+      author_id: fromId
+    }
 
     return pg('chats')
-      .modify(includesUserInChat, user1)
-      .modify(includesUserInChat, user2)
+      .where(function() {
+        this.where('user_1', fromId).orWhere('user_2', fromId)
+      })
+      .andWhere(function() {
+        this.where('user_1', toId).orWhere('user_2', toId)
+      })
       .then((results) => {
-        
+
         //check for existing user chat session
         if (results.length) {
-          return results[0].id
-        }
+          return [results[0].id]
+        } else {
+          //insert new chat session in chats   
+          let newChat = {
+            user_1: fromId,
+            user_2: toId
+          };
 
-        return pg('chats')
-          .insert(newChat)
-          .returning('id')   
+          return pg('chats')
+            .insert(newChat)
+            .returning('id')
+        }
+      })
+      .then((id) => {
+
+        newMessage.chat_id = id[0];
+        return newMessage.chat_id;
+      })
+      .then(() => {
+        return pg('messages')
+          .insert(newMessage)
+          .returning('id')
+      })
+      .catch(err => console.log(err.message));
+
+  },
+
+  getUserId: (username) => {
+    return pg('users')
+      .select('id')
+      .where({ 'username': username })
+      .then((id) => (
+        id[0].id
+      ))
+  },
+
+  getUserChatSessions: (userId, filter, callback) => {
+    var query = `select users.id as "friendId", users.first_name as "firstName", users.last_name as "lastName", users.username, users.picture_url as "pictureUrl", chats.id from chats inner join users on (user_1 = ${userId} and user_2 = users.id) or (user_2 = ${userId} and user_1 = users.id)`;
+
+    if (Object.keys(filter).length) {
+      query += ` where users.username = ${filter.username}`
+    }
+
+
+    client.query(query, (err, res) => {
+      if (err) {
+        callback(err, null);
+      } else {
+        callback(null, res.rows);
+      }
+    });
+  },
+
+  getChatMessages: (userId, friendId, callback) => {
+    
+    return pg('chats')
+      .where(function () {
+        this.where('user_1', userId).orWhere('user_2', userId)
+      })
+      .andWhere(function () {
+        this.where('user_1', friendId).orWhere('user_2', friendId)
+      })
+      .then((results) => {
+        //check for existing user chat session
+        if (results.length) {
+          return [results[0].id];
+        } else {
+
+          let newChat = {
+            user_1: userId,
+            user_2: friendId
+          };
+
+          return pg('chats')
+            .insert(newChat)
+            .returning('id')
+        }
+      })
+      .then(([chatId]) => {
+
+        return pg('messages')
+          .select('messages.id', 'messages.author_id as authorId', 'users.first_name as firstName', 'users.last_name as lastName', 'users.picture_url as pictureUrl', 'messages.created_at as createdAt', 'messages.text')
+          .innerJoin('users', 'messages.author_id', 'users.id')
+          .where({ 'messages.chat_id': chatId })
+          .orderBy('messages.created_at', 'asc')
+          .then((result) => {
+            callback(null, result);
+          })
+      })
+      .catch((err) => {
+        console.log(err.message);
       });
   },
 
+  createPostById: (userId, text, imageUrl) => {
+    let newPostToAdd = {
+      user_id: userId,
+      post_text: text
+    };
+
+    if (imageUrl) {
+      newPostToAdd.post_image_url = imageUrl;
+    };
+
+    return pg.insert(newPostToAdd)
+      .into('posts')
+      .returning('id');
+  },
+
+  getPostByAuthorId: (authorId) => {
+    return pg('posts')
+      .select('posts.id as post_id', 'picture_url', 'username', 'first_name', 'last_name', 'user_id', 'post_text', 'post_image_url', 'post_timestamp')
+      .where({'user_id': authorId})
+      .innerJoin('users', 'posts.user_id', 'users.id')
+      .orderBy('post_id', 'desc');
+  },
+
+  getAllPosts: () => {
+    return pg('posts')
+      .select('posts.id as post_id', 'picture_url', 'username', 'first_name', 'last_name', 'user_id', 'post_text', 'post_image_url', 'post_timestamp')
+      .innerJoin('users', 'posts.user_id', 'users.id')
+      .orderBy('post_id', 'desc');
+  },
+
+  getPostsFromFriends: (userId) => {
+    return pg('posts')
+      .select('posts.id as post_id', 'picture_url', 'username', 'first_name', 'last_name', 'user_id', 'post_text', 'post_image_url', 'post_timestamp')
+      .whereIn('user_id', function() {
+        this.select('users.id')
+          .from('users_friendships')
+          .innerJoin('users', 'users.id', 'users_friendships.user_id_to')
+          .where({'user_id_from': userId})
+          .where({'state': 'friend'})
+      })
+      .innerJoin('users', 'posts.user_id', 'users.id')
+      .orderBy('post_id', 'desc');
+  },
   
-  addChatMessage: (chatId, message) => {
-    let newMessage = {
-      chat_id: chatId,
-      text: message.text,
-      authord_id: message.from
-    }
-
-    return pg('messages')
-      .insert(message)
-      .returning('id')
-      .catch(err => console.log(err.message));
-  },
-
-  getUserChatSessions: (userId) => {
-    return pg('chats')
-      .select('*')  
-      .where({'user_1': userId})
-      .orWhere({'user_2': userId})
-  },
-
   getChatMessages: (chatId) => {
     return pg('messages')
       .where({'chatId': chatId})
       .limit(50);
+  },
+  getNotifications: (userId) => {
+    return pg.column(
+      {id: 'notifications.id'},
+      {notificationUserId: 'notifications.user_id'},
+
+      {fromUserId: 'users_friendships.user_id_from'},
+      {fromUserUsername: 'from_users.username'},
+      {fromUserFirstName: 'from_users.first_name'},
+      {fromUserLastName: 'from_users.last_name'},
+      {fromUserPictureUrl: 'from_users.picture_url'},
+
+      // {toUserId: 'users_friendships.user_id_to'},
+      // {toUserUsername: 'to_users.username'},
+      // {toUserFirstName: 'to_users.first_name'},
+      // {toUserLastName: 'to_users.last_name'},
+      // {toUserPictureUrl: 'to_users.picture_url'},
+
+      {notificationType: 'notifications_friendships.type'},
+      {friendshipState: 'users_friendships.state'},
+      {notificationTS: 'notifications.created_at'},
+      {notificationSeen:' notifications.seen'}
+    )
+      .select()
+      .from('notifications')
+      .innerJoin('notifications_friendships', 'notifications.id', 'notifications_friendships.notifications_id')
+      .innerJoin('users_friendships', 'notifications_friendships.friendships_id', 'users_friendships.id')
+      .innerJoin('users as from_users', 'from_users.id', 'users_friendships.user_id_from')
+      .innerJoin('users as to_users', 'to_users.id', 'users_friendships.user_id_to')
+      .where('notifications.user_id', userId)
+      // .andWhere('notifications.seen', 'false')
+      .orderByRaw('notifications.seen asc, notifications.created_at desc')
   }
-}
+};
+

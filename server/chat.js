@@ -1,32 +1,40 @@
 
-const chat = require('socket.io')();
+const db = require('../database-posgtres');
+const _ = require('underscore');
+
 const connections = {};
-
-const attach = function(server) {
-
-  chat.attach(server);
+const users = {};
   
+let init = function(io) {
+
+  let chat = io.of('/chat');
+
   chat.on('connection', function (socket) {
 
     socket.on('login', (data) => {
-      connections[data.username] = {
-        username: data.username,
+      connections[data.userId] = {
+        userId: data.userId,
         socket: socket,
         connected: true
       };
 
-      socket.emit('onlineusers', getOnlineUsers());
+      chat.emit('onlineusers', getOnlineUsers());
 
     });
 
     socket.on('message', (data) => {
 
-      if (connections[data.to]) {
-        let s = connections[data.to].socket;
-        s.emit('message', data);
-      } else {
-        // create new notification
-      }
+      db.addChatMessage(data.from, data.to, data.message)
+
+        .then(() => {
+          if (connections[data.to]) {
+            let s = connections[data.to].socket;
+            s.emit('message', data);
+          }
+        })
+
+        .catch(err => console.log(err.message));
+
     });
 
     socket.on('disconnect', (reason) => {
@@ -39,8 +47,8 @@ const getOnlineUsers = function() {
 };
 
 module.exports = {
-  attach: attach,
-  getOnlineUsers: getOnlineUsers
+  init: init
+  // getOnlineUsers: getOnlineUsers
 };
 
 

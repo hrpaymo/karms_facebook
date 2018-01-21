@@ -9,34 +9,8 @@ import ChatHistory from './ChatHistory.jsx';
 import ChatOnlineUsers from './ChatOnlineUsers.jsx';
 import io from 'socket.io-client';
 import http from 'axios';
+import _ from 'underscore';
  
-
-const chatHistory = [
-  {
-    chatId: 1,
-    name: 'Mike Sutherland',
-    photo: 'https://semantic-ui.com/images/avatar/large/elliot.jpg',
-    text: 'Hey, how are things going with you'
-  },
-  {
-    chatId: 2,
-    name: 'Ginger',
-    photo: 'https://semantic-ui.com/images/avatar/large/elliot.jpg',
-    text: 'Hey, how are things going with you'
-  },
-  {
-    chatId: 3,
-    name: 'Josh',
-    photo: 'https://semantic-ui.com/images/avatar/large/elliot.jpg',
-    text: 'Hey, how are things going with you'
-  },
-  {
-    chatId: 4,
-    name: 'Ace',
-    photo: 'https://semantic-ui.com/images/avatar/large/elliot.jpg',
-    text: 'Hey, how are things going with you'
-  }
-];
 
 class ChatWindow extends React.Component {
   constructor(props) {
@@ -49,13 +23,16 @@ class ChatWindow extends React.Component {
       user: props.username,
       displayChat: false,
       onlineUsers: [],
-      chatHistory: chatHistory
+      chatHistory: [],
+      displayOnlineUsers: false,
+      onlineUsers: []
     }
 
     this.onClose = this.onClose.bind(this);
-    this.onFriendSelect = this.onFriendSelect.bind(this);
     this.sendMessage = this.sendMessage.bind(this);
-    this.newMessage = this.newMessage.bind(this);
+    this.openChat = this.openChat.bind(this);
+    this.onCloseOnlineUsers = this.onCloseOnlineUsers.bind(this);
+    this.openOnlineUsers = this.openOnlineUsers.bind(this);
   }
 
   componentDidMount() {
@@ -74,35 +51,56 @@ class ChatWindow extends React.Component {
   }
 
   connect() {
-    const socket = io();
+    const socket = io('/chat');
 
     socket.on('connect', () => {
-      socket.emit('login', { username: this.props.username });
+      socket.emit('login', { userId: this.props.userId });
     });
 
     socket.on('message', (message) => {
 
       if (!this.state.friend) {
-        this.setState({
-          friend: { 
-            username: message.from,
-            name: message.from 
-          },
-          displayChat: true
+        
+        this.openChat({id: message.from});
+
+      } else {
+        
+        let messages = this.state.messages;
+        messages.push({
+          authordId: this.state.friend.id,
+          text: message.message,
+          pictureUrl: this.state.friend.pictureUrl
         });
+        this.setState({
+          messages: messages
+        })
       }
       
-      let messages = this.state.messages;
-      messages.push(message.message);
-      this.setState({
-        messages: messages
-      })
     });
 
-    socket.on('onlineusrs', (data) => {
-      this.setState({
-        onlineUsers: data
+    socket.on('onlineusers', (data) => {
+
+      // remove self from online users
+
+      let currentId = this.props.userId;
+      data = _.filter(data, (userId) => {
+        return userId !== `${currentId}`;
       });
+
+      Promise.all(data.map(userId => (
+        http.get(`/api/user/${userId}`)
+      )))
+        .then((responses) => {
+          let users = responses.map(response => (
+            response.data[0]
+          ));
+          this.setState({
+            onlineUsers: users
+          });
+        })
+        .catch((err) => {
+          console.log(err.message);
+        })
     });
 
     socket.on('disconnect', (reason) => {
@@ -119,54 +117,82 @@ class ChatWindow extends React.Component {
     });
   }
 
-  newMessage() {
+  onClose() {    
     this.setState({
-      displayChat: true
-    })
-  }
-
-  onClose() {
-    //tidy up sockets
-    if (this.state.socket) {
-      this.state.socket.close();
-    }
-    
-    this.setState({
-      socket: null,
       friend: null,
       messages: [],
       displayChat: false
     });
   }
 
-  onFriendSelect(friend) {
-
-    if (!this.state.socket) {
-      this.connect();
-    }
-
-
+  onCloseOnlineUsers() {
     this.setState({
-      friend: friend
+      displayOnlineUsers: false
     });
   }
 
-  sendMessage(message) {
+  openOnlineUsers() {
+    this.setState({
+      displayOnlineUsers: true
+    });
+  }
+
+  openChat(friend) {
+    if (friend) {
+      Promise.all([
+        //fetch freind details
+        http.get(`/api/user/${friend.id}`),      
+        //fetch chat history
+        http.get(`/api/chat/${this.props.userId}`, {
+          params: {
+            friendId: friend.id
+          }
+        })
+      ])
+
+      .then((results) => {
+        this.setState({
+          displayChat: true,
+          friend: results[0].data[0],
+          messages: results[1].data
+        })
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+
+    } else {
+      //set displayChat to true
+      this.setState({
+        friend: null,
+        displayChat: true,
+        messages: []
+      })
+    }
+  }
+
+  
+  sendMessage(text) {
     this.state.socket.emit('message', {
-      to: this.state.friend.username,
-      message: message,
-      from: this.props.username
+      to: this.state.friend.id,
+      message: text,
+      from: this.props.userId,
     });
 
     let messages = this.state.messages;
+    let message = {
+      text: text,
+      authorId: this.props.userId
+    };
     messages.push(message);
 
     this.setState({
       messages: messages
     });
   }
-  renderOnlineUsers(users) {
-    return <ChatOnlineUsers users={users} />
+
+  renderOnlineUsers(active) {
+    return active && <ChatOnlineUsers users={this.state.onlineUsers} onSelectChat={this.openChat} onClose={this.onCloseOnlineUsers} />
   }
 
   renderChatWindow(active) {
@@ -176,12 +202,12 @@ class ChatWindow extends React.Component {
       chatMessageInput;
 
     if (this.state.friend) {
-      chatHeaderText = this.state.friend.name;
+      chatHeaderText = this.state.friend.firstName + ' ' + this.state.friend.lastName;
       chatFriendSearch = null;
-      chatMessageInput = <ChatMessageInput onSubmit={this.sendMessage} socket={this.state.socket} />
+      chatMessageInput = <div className='chatinput'><ChatMessageInput onSubmit={this.sendMessage} socket={this.state.socket} /></div>
     } else {
       chatHeaderText = 'New Message';
-      chatFriendSearch = <ChatFriendSearch onSelect={this.onFriendSelect} />
+      chatFriendSearch = <ChatFriendSearch onSelect={this.openChat} />
       chatMessageInput = null;
     }
 
@@ -190,7 +216,7 @@ class ChatWindow extends React.Component {
         <Segment >
           <ChatHeader text={chatHeaderText} onClose={this.onClose} />
           {chatFriendSearch}
-          <ChatFeed messages={this.state.messages} />
+          <ChatFeed messages={this.state.messages} userId={this.props.userId}/>
           {chatMessageInput}
         </Segment>
       </div>
@@ -201,14 +227,17 @@ class ChatWindow extends React.Component {
 
     return (
       <div className='chatcomponent' >
-        <div className='chatbutton' >
           <Popup
             trigger={<Button icon='comments'/>}
-            content={<ChatHistory newMessage={this.newMessage} chats={this.state.chatHistory} />}
+            content={<ChatHistory 
+              newMessage={this.openChat} 
+              chats={this.state.chatHistory} 
+              onOnlineUsers={this.openOnlineUsers} 
+              onSelectChat={this.openChat}/>}
             on='click'
           />          
-        </div>
         {this.renderChatWindow(this.state.displayChat)}
+        {this.renderOnlineUsers(this.state.displayOnlineUsers)}
       </div>
     )
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Popup, Icon, List, Image } from 'semantic-ui-react';
 import SearchBar from './Search.jsx';
 import ChatWindow from './Chat/ChatWindow.jsx';
+import NotificationsButton from './Notifications/NotificationsButton.jsx';
 import { Link, Redirect } from 'react-router-dom';
 import FriendRequestList from './FriendRequestList.jsx';
 
@@ -18,53 +19,63 @@ class Header extends React.Component {
 
     const hasFriendRequests = false;
 
-    let icon = hasFriendRequests
-      ? <Icon color='yellow' name='users' />
-      : <Icon disabled name='users' />
-
     return (
-      <div className="global-header">
-        {this.props.signedIn && 
-          <div>
-            <Image className="logo" src="/images/rbooktransparent.png"></Image>
-            <SearchBar 
-              className="searchBarClass"
-              loggedInUser={this.props.name}/>
-            <div className="header-btn">
-              <span className='friend-requests'>
+      <span>
+        {!this.props.signedIn 
+        ? <div className="navbar"></div>
+        : <div className='navbar navbar--loggedIn'>
+            <div className='navbar-searchLogoContainer'>
+              
+              <img className="navbar-logo" src="/images/rbooktransparent.png"></img>
+             
+              <SearchBar 
+                size='large'
+                className="navbar-searchBar"
+                loggedInUser={this.props.name}/>
+            </div>
+            <div className="navbar-menuItemsContainer">
+              <div className='navbar-menuItems navbar-menuItems--icon'>
+                <NotificationsButton userId={this.props.userId} />
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--icon'>
+                <ChatWindow 
+                  userId={this.props.userId}
+                  username={this.props.name} />
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--icon'>
                 <Popup 
-                  trigger={icon}
+                  trigger={<Button icon='users'/>}
                   content={<FriendRequestList 
                     userId={this.props.userId} 
                     friendRequests={this.props.friendRequests}
-                    refreshFriendRequests={this.props.refreshFriendRequests}
-                  />}
+                    refreshFriendRequests={this.props.refreshFriendRequests}/>}
                   on='click'
                   position='bottom center'
                 />
-              </span>
-              <Link
-                onClick={ () => this.props.updateLoginState(false) }
-                to='/login'>
-                <button className="btn">
-                  <span className="headerFont">Log Out</span>
-                </button>
-              </Link>
-              <Link to={profilePath}>
-                <button className="btn">
-                  <span className="headerFont">Profile</span>
-                </button>
-              </Link>
-              <Link to={feedPath}>
-                <button className="btn">
-                  <span className="headerFont">Feed</span>
-                </button>
-              </Link>
-              <ChatWindow userId={this.props.userId} username={this.props.name} />
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--text'>
+                <Link
+                  to={feedPath}>
+                  Feed
+                </Link>
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--text'>
+                <Link
+                  to={profilePath}>
+                  Profile
+                </Link>
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--text'>
+                <Link
+                  onClick={ () => this.props.updateLoginState(false) }
+                  to='/'>
+                  Log Out
+                </Link>
+              </div>
             </div>
           </div>
         }
-      </div>
+      </span>
     );
   }
 }

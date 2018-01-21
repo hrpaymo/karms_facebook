@@ -15,14 +15,13 @@ class Profile_postSection extends React.Component {
   render() {
     return (
       <div className={this.props.view === 'Timeline' ? "postSection" : "hide"}>
+        {this.props.isOwner && 
+          <CreatePost 
+            userId={this.props.loggedInUserId}
+            getAllPosts={this.props.getUserPosts.bind(this)}
+            name={this.props.username}/>}
+        
         {this.props.isOwner ? 
-          <CreatePost renderNewPost={this.props.getUserPosts.bind(this)} name={this.props.username}/>
-          :
-          <span></span>
-        }
-
-        {this.props.isOwner ? 
-
           <List className="items">
           {
             this.props.posts.map((post, index) => (
