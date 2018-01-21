@@ -35,6 +35,9 @@ class Header extends React.Component {
             </div>
             <div className="navbar-menuItemsContainer">
               <div className='navbar-menuItems navbar-menuItems--icon'>
+                <NotificationsButton userId={this.props.userId} />
+              </div>
+              <div className='navbar-menuItems navbar-menuItems--icon'>
                 <ChatWindow 
                   userId={this.props.userId}
                   username={this.props.name} />
@@ -69,8 +72,6 @@ class Header extends React.Component {
                   Log Out
                 </Link>
               </div>
-              <ChatWindow userId={this.props.userId} username={this.props.name} />
-              <NotificationsButton userId={this.props.userId} />
             </div>
           </div>
         }

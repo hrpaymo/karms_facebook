@@ -31,10 +31,9 @@ let init = io => {
 const sendNofications = (userId, notifications) => {
   let socket = connections[userId].socket;
   if(socket) {
-    console.log(notifications);
     socket.emit('notifications', notifications);
   } else {
-    console.log('userId', userId, 'does not exist in the notifications connections table.');
+    console.log('userId', userId, 'does not exist in the notifications connections table. User is probably offline.');
   }
 }
 
