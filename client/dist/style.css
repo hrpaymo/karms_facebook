@@ -2,9 +2,108 @@ body {
   background: #F2F2F2 !important;
 }
 
+/******************************************** NAVBAR WITH FLEX ******************************************************/
+
+/* Structure */ 
+
+.navbar, .navbar--loggedIn {
+  /* aesthetics */
+  background-color: #3F5FA4;
+  font-family: 'Roboto', Helvetica, Arial, sans-serif !important;
+  font-size: 15px;
+
+  /* structure */
+  height: 50px;
+  margin-bottom: 20px;
+
+  /* flex qualities */ 
+  display: flex;
+  align-items: center; 
+  /* defaults of flex nowrap and flex row are great, no other changes needed!*/
+}
+
+.navbar-searchLogoContainer {
+  /* searchContainer is a child of the flex parent .navbar-loggedin 
+  This controls its child-behavior */
+
+  flex-basis: 65%;
+  padding-left: 13%; /* chose this percentage to match the main content sidebar */
+
+  /* searchLogoContainer is also a FLEX PARENT.
+  Here are the parent settings */
+  display: flex;
+  align-items: center;
+
+  /* defaults of flex nowrap and flex row are great, no other changes needed!*/
+}
+
+.navbar-menuItemsContainer {
+    /* searchContainer is a child of a flex parent (navbar-loggedIN). 
+  This controls the child-behavior */
+  flex-basis: 35%;
+
+  /* searchContainer is also a parent of flex-children.
+  here are the settings for my parent container */
+  display: flex; 
+  justify-content: flex-start; /* horizontal, places at left of container */ 
+  align-items: center; /* vertical alignment within container */
+
+  /* defaults of flex nowrap and flex row are great, no other changes needed!*/
+
+}
+
+/* Styling for individual items */ 
+
+.navbar-logo {
+  height: 30px;
+  width: 30px;  
+  border-radius: 1px;
+}
+
+.navbar-menuItems {
+  padding: 8px;
+}
+
+.navbar-menuItems--text a {
+  color: white;
+  background: transparent;
+  border-style: none;
+  cursor: pointer;
+}
+
+.navbar-menuItems--text a:hover {
+  background-color: #365899;
+  color: white;
+}
+
+.navbar-menuItems--icons {
+
+}
+
+/* search input */
+
+.search-input {
+  padding-left: 15px;
+  font-size: 15px;
+}
+
+/* override semantic bs */
+.search-input > .ui.icon.input input {
+  padding: 4px 0;
+}
+
+
 /******************************************** Search / Header Component ******************************************************/
 
-.ui.icon.input {
+.global-header {
+  height: 65px;
+  background-color: #3F5FA4;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+
+/*.ui.icon.input {
   height: 28px !important;
   margin-top: 17.25px;
 }
@@ -27,7 +126,7 @@ body {
 }
 .search-btn {
   height: 30px;
-  /* width: 45px; */
+
   border: none;
   margin: 8px 0 7px 0;
   background-color: #f6f7f9;
@@ -39,16 +138,7 @@ body {
   float: left;
 }
 
-.friend-requests {
-  float: right;
-  margin-top: 20px;
-}
-.global-header {
-  height: 65px;
-  background-color: #3F5FA4;
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-}
+*/
 
 .header-btn {
   margin-right: 140px;
@@ -80,6 +170,8 @@ body {
   font-family: 'Roboto', Helvetica, Arial, sans-serif !important;
   font-size: 15px;
 }
+
+
 
 /******************************************** Profile Component ******************************************************/
 

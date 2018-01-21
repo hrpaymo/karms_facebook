@@ -78,20 +78,16 @@ class SearchBar extends Component {
 
     if (this.state.redirect) {
       return (
-      <div>
-        <Grid>
-          <div className="search-bar">
-            <Search
-              loading={isLoading}
-              onResultSelect={this.handleResultSelect.bind(this)}
-              onSearchChange={this.handleSearchChange.bind(this)}
-              results={results}
-              value={value}
-              className="search-input"
-              // {...this.props}
-            />
-          </div>
-        </Grid>
+      <div className="search-input">
+        <Search
+          size='large'
+          loading={isLoading}
+          onResultSelect={this.handleResultSelect.bind(this)}
+          onSearchChange={this.handleSearchChange.bind(this)}
+          results={results}
+          value={value}
+          // {...this.props}
+        />
         <Redirect to={profileUrl} />
       </div>
       );
@@ -99,9 +95,9 @@ class SearchBar extends Component {
     }
 
     return (
-      <Grid>
-        <div className="search-bar">
+      <div>
           <Search
+            size='large'
             loading={isLoading}
             onResultSelect={this.handleResultSelect.bind(this)}
             onSearchChange={this.handleSearchChange.bind(this)}
@@ -110,8 +106,7 @@ class SearchBar extends Component {
             className="search-input"
             // {...this.props}
           />
-        </div>
-      </Grid>
+      </div>
     )
   }
 }

@@ -227,7 +227,6 @@ class ChatWindow extends React.Component {
 
     return (
       <div className='chatcomponent' >
-        <div className='chatbutton' >
           <Popup
             trigger={<Button icon='comments'/>}
             content={<ChatHistory 
@@ -237,7 +236,6 @@ class ChatWindow extends React.Component {
               onSelectChat={this.openChat}/>}
             on='click'
           />          
-        </div>
         {this.renderChatWindow(this.state.displayChat)}
         {this.renderOnlineUsers(this.state.displayOnlineUsers)}
       </div>
