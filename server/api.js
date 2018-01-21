@@ -75,9 +75,10 @@ const api = {
     },
 
     getLiked: function (req, res) {
-      db.getPersonalLikeAmount(req.params.username, req.query.text, (err, data) => {
+      db.getPersonalLikeAmount(req.query.userId, req.query.post_id, (err, data) => {
         if (err) {
-          res.status(500).send(err);
+          console.error(err);
+          res.status(500).send('server error');
         } else {
           res.status(200).json(data);
         }
@@ -85,7 +86,7 @@ const api = {
     },
 
     getLikers: function (req, res) {
-      db.getLikers(req.query.text, (err, data) => {
+      db.getLikers(parseInt(req.query.post_id), (err, data) => {
         if (err) {
           res.status(404).send(err);
         } else {
@@ -378,34 +379,44 @@ const api = {
     },
 
     unlikePost: function (req, res) {
+      if (!req.query.post_id || !req.query.userId) {
+        return res.status(400).send('badly formed reqest');
+      }
 
-      db.unlikePost(req.params.author, req.query.text, req.query.username, (err, data) => {
-        if (err) {
-          console.log(err.message);
-          res.status(400).send('Unable to unlike post');
-        } else {
-          res.status(200).json(data);
-        }
-      })
+      db.unlikePost(req.query.post_id, req.query.userId)
+        .then((results) => {
+          res.status(200).json('unliked');
+        })
+        .catch((err) => {
+          console.error(err);
+          res.status(500).send('Unable to like post');
+        })
     },
 
     likePost: function(req, res) {
+      if (!req.body.post_id || !req.body.userId) {
+        return res.status(400).send('badly formed reqest');
+      }
 
-      db.likePost(req.params.author, req.body.text, req.body.username, (err, data) => {
-        if (err) {
-          console.log(err.message);
-          res.status(400).send('Unable to like Post');
-        } else {
-          res.status(200).json(data);
-        }
-      })
+      db.likePost(parseInt(req.body.post_id), parseInt(req.body.userId))
+        .then((results) => {
+          res.status(200).json('like added');
+        })
+        .catch((err) => {
+          console.error(err);
+          res.status(500).send('Unable to like post');
+        })
     },
 
     getNumLikes: function (req, res) {
-      db.getLikeAmount(req.query.text, (err, data) => {
+      if (!req.query.post_id) {
+        return res.status(400).send('badly formed reqest');
+      }
+
+      db.getNumLikes(req.query.post_id, (err, data) => {
         if (err) {
-          console.log(err.message);
-          res.status(400).send('Unable to retrieve number of likes');
+          console.error(err);
+          res.status(500).send('Unable to retrieve number of likes');
         } else {
           res.status(200).json(data);
         }
@@ -552,54 +563,52 @@ const api = {
 };
 
 
-// POSTS NEW
+
+
+// ----- POSTS ----- 
+
+// creating
 route.post('/uploadImagePost', grabImage.single('sharedImage'), api.post.createPostImage); // uploads image to CDN and returns URL
-route.post('/createPost', api.post.createPostNonImage);
-route.get('/posts/:authorId', api.posts.getPostsByAuthorId); // CG - gets posts by authorID
+route.post('/createPost', api.post.createPostNonImage); //creates a post without images
+
+// retrieving
 route.get('/myFeed', api.posts.getFeed); // CG - gets the ideal logged in feed for a user 
+route.get('/posts/:authorId', api.posts.getPostsByAuthorId); // gets posts by authorID
 
-//USERS
+// likes
+route.get('/post/like', api.user.getLiked); //status of whether a user has liked a post
+route.post('/post/like', api.post.likePost); // like a post by id
+route.delete('/post/unlike', api.post.unlikePost); // unlike a post by id
+route.get('/post/likers', api.user.getLikers); // get all likers of a particular post
+route.get('/post/likeCount', api.post.getNumLikes); // get number of likes by post ID
+
+// ----- MULTIPLE USERS ----- 
+
+// get all users
 route.get('/search/users', api.users.getUsers); //get all users
-route.get('/likes', api.post.getNumLikes); // get number of likes
-route.post('/likes/:author', api.post.likePost); //like a post
-route.delete('/likes/:author', api.post.unlikePost); //unlike a post
-route.get('/likers', api.user.getLikers); // get all likers of a particular user
-route.post('/friendship', api.user.addFriendship); // CG: ginger's new friendship endpoint
-route.get('/friendship', api.user.getFriendship); // CG: This endpoint returns the status of an existing friendship request between two users.
+
+// friending between users
 route.get('/friend_list', api.user.getAllFriends);
-
-
-//CHATS
-route.get('/chats/:userId', api.chats.getChatSessions); //retrieve chat history of user
-route.get('/chat/:userId', api.chat.getChatMessages); //retrieve messages from a chat session
-//USER
-// route.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }),api.user.login); // varifies identity on login
-route.get('/user/:userId', api.user.getUserById); // gets user by user Id
+route.post('/friendship', api.user.addFriendship); // CG: ginger's new friendship endpoint
 route.post('/friendship', api.user.addFriendship); // add a friendship between 2 users
 route.patch('/friendship', api.user.destroyFriendship); // destroy a friendship or a friendship request
 route.get('/friendship', api.user.getFriendship); // returns the status of an existing friendship between two users.
-route.get('/friend_list', api.user.getAllFriends); // returns a user's friends list, or if the type requests is sent, a friends-request list
 
+// ----- CHATS  ----- 
+route.get('/chats/:userId', api.chats.getChatSessions); //retrieve chat history of user
+route.get('/chat/:userId', api.chat.getChatMessages); //retrieve messages from a chat session
+
+// ----- SINGLE USER ENDPOINTS ----- 
+
+// route.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }),api.user.login); // varifies identity on login
+route.get('/user/:userId', api.user.getUserById); // gets user by user Id
 route.get('/:username/profilePage', api.user.getProfilePage); // get profilePage info for user
-route.get('/:firstname/:lastname', api.user.getUsername); //gets the username of a user by first name, last name
-route.get('/likers', api.user.getLikers); // get all likers of a particular user
-
-route.get('/:username/likes', api.user.getLiked); //get liked users of user
-route.get('/:username/profile/:user', api.user.getProfile); //get profile of a specific user
-route.get('/:username', api.user.getUser); //gets a user
-
-route.post('/:username', api.user.createUser); //creates a new user
 route.patch('/:username/updateProfile', api.user.updateProfile); //update current user's profile
+route.get('/:username/profile/:user', api.user.getProfile); //get profile of a specific user
 
+route.get('/:username', api.user.getUser); //gets a user
+route.post('/:username', api.user.createUser); //creates a new user
 
-//POST
-route.get('/:username/post/author', api.post.getAuthor); // gets the auther of a post
-route.post('/:username/posts', api.post.createPost); // create new post
-
-//POSTS
-route.get('/:username/posts', api.posts.getPosts); //get posts for the user
-route.get('/:username/posts/:certainUser', api.posts.getUserPosts); // get posts for a specified user
-
-route.get('/:firstname/:lastname', api.user.getUsername); //gets the username of a user by first name, last name
+// route.get('/:firstname/:lastname', api.user.getUsername); //gets the username of a user by first name, last name
 
 module.exports = route;

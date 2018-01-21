@@ -28,10 +28,10 @@ class Profile_postSection extends React.Component {
               <FadeIn key={index}>
                 <div key={index} className="profilePostBorder">
                   <Post 
+                    userId={this.props.loggedInUserId}
                     post={post} 
                     authorId={post.user_id}
                     authorUsername= {post.username}
-                    name={this.props.username} 
                     profile={this.props.profile}/>
                   <br />
                 </div>
@@ -47,7 +47,8 @@ class Profile_postSection extends React.Component {
             this.props.posts.map((post, index) => (
               <FadeIn key={index}>
                 <div key={index} className="profilePostBorder" profile={this.props.profile}>
-                  <Post 
+                  <Post
+                    userId={this.props.loggedInUserId}
                     post={post}
                     authorId={post.user_id}
                     authorUsername= {post.username}/>
