@@ -76,45 +76,26 @@ module.exports = {
     });
   },
 
-  likePost: (author, text, username, callback) => {
+  likePost: (post_id, user_id) => {
     let queryStr = 
-    `INSERT INTO user_posts_liked (user_id, post_id) 
-    VALUES ((SELECT id FROM users WHERE username = '${username}'),
-    (SELECT posts.id FROM posts INNER JOIN users ON users.id = 
-      posts.user_id AND posts.post_text = 
-      '${text}' AND posts.user_id = 
-      (SELECT id FROM users WHERE username = '${author}')))`;
+      `INSERT INTO user_posts_liked (post_id, user_id) 
+      SELECT ${post_id}, ${user_id} where not exists 
+      (select 1 from user_posts_liked where user_id=${user_id} AND post_id=${post_id});`
 
-    client.query(queryStr, (err, res) => {
-      if (err) {
-        callback(err, null);
-      } else {
-        callback(null, res.rows);
-      }
-    })
+    return client.query(queryStr);
   },
-  unlikePost: (author, text, username, callback) => {
+
+  unlikePost: (post_id, user_id) => {
     let queryStr = 
-    `DELETE FROM user_posts_liked WHERE user_id = 
-    (SELECT id FROM users WHERE username = '${username}')
-    AND post_id = (SELECT posts.id FROM posts INNER JOIN users ON users.id = 
-      posts.user_id AND posts.post_text = 
-      '${text}' AND posts.user_id = 
-      (SELECT id FROM users WHERE username = '${author}'))`;
+    `DELETE FROM user_posts_liked WHERE user_id=${user_id}
+    AND post_id = ${post_id}`;
 
-    client.query(queryStr, (err, res) => {
-      if (err) {
-        callback(err, null);
-      } else {
-        callback(null, res.rows);
-      }
-    })
+    return client.query(queryStr);
   },
-  getLikeAmount: (text, callback) => {
 
-    let queryStr =
-    `SELECT user_id FROM user_posts_liked WHERE post_id = 
-    (SELECT id FROM posts WHERE post_text = '${text}' LIMIT 1)`;
+  getNumLikes: (post_id, callback) => {
+    console.log(post_id);
+    let queryStr =`SELECT COUNT(id) FROM user_posts_liked WHERE post_id=${post_id}`;
     client.query(queryStr, (err, res) => {
       if (err) {
         callback(err, null);
@@ -123,13 +104,11 @@ module.exports = {
       }
     });
   },
-  getPersonalLikeAmount: (username, text, callback) => {
 
+  getPersonalLikeAmount: (userId, postId, callback) => {
     let queryStr =
-    `SELECT count(user_id) FROM user_posts_liked INNER JOIN 
-    users ON users.id = user_posts_liked.user_id AND 
-    user_posts_liked.user_id = (SELECT id FROM users WHERE username = '${username}') 
-    WHERE post_id = (SELECT id FROM posts WHERE posts.post_text = '${text}');
+    `SELECT count(id) FROM user_posts_liked WHERE user_id=${userId}
+    AND post_id=${postId};
     `
     client.query(queryStr, (err, res) => {
       if (err) {
@@ -139,11 +118,12 @@ module.exports = {
       }
     });
   },
-  getLikers: (text, callback) => {
+
+  getLikers: (post_id, callback) => {
     let queryStr =
-    `SELECT users.first_name, users.last_name FROM users INNER JOIN 
-    user_posts_liked ON users.id = user_posts_liked.user_id INNER JOIN 
-    posts ON posts.id = user_posts_liked.post_id AND posts.post_text = '${text}'`;
+    `SELECT users.first_name, users.last_name, users.username, users.id
+    FROM users INNER JOIN user_posts_liked ON users.id = user_posts_liked.user_id 
+    WHERE user_posts_liked.post_id=${post_id};`;
     client.query(queryStr, (err, res) => {
       if (err) {
         callback(err, null);
@@ -152,6 +132,7 @@ module.exports = {
       }
     })
   },
+
   searchSomeone: (name, callback) => {
     const queryStr = `SELECT * FROM users WHERE username LIKE '%${name}%';`; // selects all names that begin with searched query
     client.query(queryStr, (err, res) => {
@@ -162,6 +143,7 @@ module.exports = {
       }
     });
   },
+
   getAllPosts: (callback) => {
     let queryStr = 'SELECT posts.*, users.id, users.first_name, users.last_name, users.username FROM posts INNER JOIN users ON users.id = posts.user_id ORDER BY id DESC';
     client.query(queryStr, (err, res) => {

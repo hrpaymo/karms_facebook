@@ -50,16 +50,16 @@ app.post('/login',
 
 //serve static pages
 app.use(express.static(__dirname + '/../client/dist'));
-app.use('/:username', express.static(__dirname + '/../client/dist'));
 
 //handle /api endpoints
 app.use('/api', api);
 
+// React Router conflicts
+app.use('/profile/*', express.static(__dirname + '/../client/dist/index.html'));
+app.use('/*', express.static(__dirname + '/../client/dist/index.html'));
 
 let port = process.env.PORT || 3000;
 
 server.listen(port, function() {
   console.log(`listening on port ${port}`);
 });
-
-
