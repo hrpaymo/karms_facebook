@@ -2,12 +2,13 @@ const express = require('express');
 let app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
-require('./chat')(io);
+require('./chat').init(io);
+require('./notifications').init(io);
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const db = require('../database-posgtres/index.js');
 const api = require('./api');
-app.use(morgan('tiny'));
+// app.use(morgan('tiny'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -53,7 +54,7 @@ app.use(express.static(__dirname + '/../client/dist'));
 app.use('/:username', express.static(__dirname + '/../client/dist'));
 
 //handle /api endpoints
-app.use('/api', api);
+app.use('/api', api.route);
 
 
 let port = process.env.PORT || 3000;

@@ -66,7 +66,6 @@ class SignIn extends React.Component {
       if (data.length) {
         let basicUserData = data[0];
 
-
         // callback functions that populate user data in Main
 
         this.props.setBasicUserFields(basicUserData);

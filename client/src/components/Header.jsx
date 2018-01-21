@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Popup, Icon, List, Image } from 'semantic-ui-react';
 import SearchBar from './Search.jsx';
 import ChatWindow from './Chat/ChatWindow.jsx';
+import NotificationsButton from './Notifications/NotificationsButton.jsx';
 import { Link, Redirect } from 'react-router-dom';
 import FriendRequestList from './FriendRequestList.jsx';
 
@@ -33,6 +34,9 @@ class Header extends React.Component {
                 loggedInUser={this.props.name}/>
             </div>
             <div className="navbar-menuItemsContainer">
+              <div className='navbar-menuItems navbar-menuItems--icon'>
+                <NotificationsButton userId={this.props.userId} />
+              </div>
               <div className='navbar-menuItems navbar-menuItems--icon'>
                 <ChatWindow 
                   userId={this.props.userId}
@@ -68,7 +72,6 @@ class Header extends React.Component {
                   Log Out
                 </Link>
               </div>
-
             </div>
           </div>
         }
