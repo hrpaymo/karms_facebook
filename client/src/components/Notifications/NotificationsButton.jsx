@@ -21,7 +21,6 @@ class NotificationsButton extends React.Component {
   }
 
   componentDidMount() {
-    console.log('NotificationsButton loaded');
     this.connect();
     this.getUnseenNotifications();
   }
@@ -30,12 +29,10 @@ class NotificationsButton extends React.Component {
     const socket = io('/notifications');
 
     socket.on('connect', () => {
-      console.log('logging in to /notifications/login for userId:', this.props.userId);
       socket.emit('login', {userId: this.props.userId });
     });
 
     socket.on('notifications', notifications => {
-      console.log('notifications:', notifications);
       this.setState({
         notifications: notifications
       })
@@ -57,9 +54,8 @@ class NotificationsButton extends React.Component {
 
   // this gets called on page refresh
   getUnseenNotifications() {
-    http.get(`/api/notifications/unseen/${this.props.userId}`)
+    http.get(`/api/notifications/${this.props.userId}`)
       .then(response => {
-        console.log('here\'s the response.data I got:', response.data);
         this.setState({
           notifications: response.data
         })

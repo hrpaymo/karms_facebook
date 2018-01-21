@@ -6,7 +6,7 @@ const NotificationHistoryMessage = props => (
   <Image avatar src={props.notification.fromUserPictureUrl} />
   <List.Content>
     <List.Header>{props.notification.fromUserFirstName} {props.notification.fromUserLastName}</List.Header>
-    <List.Description>{props.notification.friendshipState === 'friend'
+    <List.Description>{props.notification.notificationType === 'approval'
                         ? `Accepted your friend request!`
                         : `Requested you as a friend!`
                       }
@@ -19,14 +19,11 @@ const NotificationHistory = props => {
   return (
     <div>
       <List>
-        {props.notifications.map((notification) => (
+        {props.notifications && props.notifications.map((notification) => (
           <NotificationHistoryMessage key={notification.id} notification={notification} />
         ))}
       </List>
-    {/* <Divider horizontal /> */}
-    {/* <a onClick={props.newMessage}>New Message</a> */}
   </div>
-
   );
 }
 

@@ -424,7 +424,7 @@ module.exports = {
                   .update({'state': 'friend'})
                   .into('users_friendships')
               })
-              .then(trx.commit)
+              // .then(trx.commit)
               // add notification to requestor
               .then(() => {
                 return pg.select('id')
@@ -442,7 +442,7 @@ module.exports = {
                 return pg.insert({
                   'notifications_id': notificationsId[0],
                   'friendships_id': insertQueryInfo.usersFriendshipsId,
-                  'type': 'approved'
+                  'type': 'approval'
                 })
                 .into('notifications_friendships')
               })
@@ -461,9 +461,12 @@ module.exports = {
               })
               .then(rows => {
                 return pg('notifications')
-                .update('seen', 'true')
+                .update({
+                  'seen': 'true'
+                })
                 .where('id', rows[0].notificationsId)
               })
+              .then(trx.commit)
               .catch(trx.rollback);
           })
         } else if (results === null) {
@@ -486,11 +489,10 @@ module.exports = {
               return pg.insert({
                 'notifications_id': notificationsId[0],
                 'friendships_id': userFriendshipsId,
-                'type': 'requested'
+                'type': 'request'
               })
               .into('notifications_friendships');
             })
-            .then(() => 'some string')
         }
       });
   },
@@ -755,7 +757,7 @@ module.exports = {
       .where({'chatId': chatId})
       .limit(50);
   },
-  getUnseenNotifications: (userId) => {
+  getNotifications: (userId) => {
     return pg.column(
       {id: 'notifications.id'},
       {notificationUserId: 'notifications.user_id'},
@@ -772,6 +774,7 @@ module.exports = {
       // {toUserLastName: 'to_users.last_name'},
       // {toUserPictureUrl: 'to_users.picture_url'},
 
+      {notificationType: 'notifications_friendships.type'},
       {friendshipState: 'users_friendships.state'},
       {notificationTS: 'notifications.created_at'},
       {notificationSeen:' notifications.seen'}
@@ -783,7 +786,7 @@ module.exports = {
       .innerJoin('users as from_users', 'from_users.id', 'users_friendships.user_id_from')
       .innerJoin('users as to_users', 'to_users.id', 'users_friendships.user_id_to')
       .where('notifications.user_id', userId)
-      .andWhere('notifications.seen', 'false')
+      // .andWhere('notifications.seen', 'false')
       .orderByRaw('notifications.seen asc, notifications.created_at desc')
   }
 };

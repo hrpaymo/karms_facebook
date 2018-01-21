@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const db = require('../database-posgtres/index.js');
 const api = require('./api');
-app.use(morgan('tiny'));
+// app.use(morgan('tiny'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

@@ -212,21 +212,18 @@ const api = {
 
       db.addFriendship(userId, friendId)
         .then((results) => {
-          console.log('added friendship. got results:', results);
           res.sendStatus(200);
-          // TODO: streamline to do getUnseenNotifications in parallel w/ Promise.all
-          return db.getUnseenNotifications(userId);
+          // TODO: streamline to do getNotifications in parallel w/ Promise.all
+          return db.getNotifications(userId);
         })
         .then(userNotifications => {
           if(userNotifications.length) {
-            console.log('sending user notifications:', userNotifications);
             notifications.sendNotifications(userId, userNotifications);
           }
-          return db.getUnseenNotifications(friendId);
+          return db.getNotifications(friendId);
         })
         .then(friendNotifications => {
           if(friendNotifications.length) {
-            console.log('sending friend notifications:', friendNotifications);
             notifications.sendNotifications(friendId, friendNotifications);
           }
         })
@@ -250,18 +247,16 @@ const api = {
       db.removeFriendship(userId, friendId)
         .then((results) => {
           res.sendStatus(200);
-          // TODO: streamline to do getUnseenNotifications in parallel w/ Promise.all
-          return db.getUnseenNotifications(userId);
+          // TODO: streamline to do getNotifications in parallel w/ Promise.all
+          return db.getNotifications(userId);
         })
         .then(userNotifications => {
-          console.log('user notifications:', userNotifications);
           if(userNotifications.length) {
             notifications.sendNotifications(userId, userNotifications);
           }
-          return db.getUnseenNotifications(friendId);
+          return db.getNotifications(friendId);
         })
         .then(friendNotifications => {
-          console.log('friend notifications:', friendNotifications);
           if(friendNotifications.length) {
             notifications.sendNotifications(friendId, friendNotifications);
           }
@@ -446,10 +441,9 @@ const api = {
 
   notifications: {
     // called when page refreshes
-    getUnseenNotifications: (req, res) => {
-      db.getUnseenNotifications(req.params.userId)
+    getNotifications: (req, res) => {
+      db.getNotifications(req.params.userId)
         .then(data => {
-          console.log('got notifications:', data);
           res.status(200).send(data);
         })
         .catch(err => {
@@ -615,7 +609,7 @@ route.get('/friendship', api.user.getFriendship); // CG: This endpoint returns t
 route.get('/friend_list', api.user.getAllFriends);
 
 // Notifications
-route.get('/notifications/unseen/:userId', api.notifications.getUnseenNotifications); 
+route.get('/notifications/:userId', api.notifications.getNotifications); 
 
 //CHATS
 route.get('/chats/:userId', api.chats.getChatSessions); //retrieve chat history of user
